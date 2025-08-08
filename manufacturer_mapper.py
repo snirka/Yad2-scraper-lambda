@@ -11,6 +11,14 @@ from difflib import SequenceMatcher
 from config import DATA_DIR, MANUFACTURERS_FILE, MODELS_FILE, YAD2_CARS_URL
 from scraper import Yad2Scraper
 
+# Import S3 storage for Lambda compatibility
+try:
+    from s3_storage import get_s3_storage, should_use_s3
+except ImportError:
+    # S3 storage not available (local mode)
+    get_s3_storage = None
+    should_use_s3 = lambda: False
+
 
 class ManufacturerMapper:
     """Maps manufacturer and model IDs to human-readable names."""
@@ -23,41 +31,65 @@ class ManufacturerMapper:
         self.models = {}
         
     def load_manufacturers(self) -> Dict[str, str]:
-        """Load manufacturers from file."""
-        if os.path.exists(MANUFACTURERS_FILE):
-            try:
-                with open(MANUFACTURERS_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                self.logger.error(f"Failed to load manufacturers: {e}")
+        """Load manufacturers from S3 or local file."""
+        try:
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                return s3_storage.load_json('manufacturers.json', {})
+            else:
+                # Use local storage
+                if os.path.exists(MANUFACTURERS_FILE):
+                    with open(MANUFACTURERS_FILE, 'r', encoding='utf-8') as f:
+                        return json.load(f)
+        except Exception as e:
+            self.logger.error(f"Failed to load manufacturers: {e}")
         return {}
     
     def load_models(self) -> Dict[str, Dict]:
-        """Load models from file."""
-        if os.path.exists(MODELS_FILE):
-            try:
-                with open(MODELS_FILE, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except Exception as e:
-                self.logger.error(f"Failed to load models: {e}")
+        """Load models from S3 or local file."""
+        try:
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                return s3_storage.load_json('models.json', {})
+            else:
+                # Use local storage
+                if os.path.exists(MODELS_FILE):
+                    with open(MODELS_FILE, 'r', encoding='utf-8') as f:
+                        return json.load(f)
+        except Exception as e:
+            self.logger.error(f"Failed to load models: {e}")
         return {}
     
     def save_manufacturers(self, manufacturers: Dict[str, str]) -> bool:
-        """Save manufacturers to file."""
+        """Save manufacturers to S3 or local file."""
         try:
-            with open(MANUFACTURERS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(manufacturers, f, ensure_ascii=False, indent=2)
-            return True
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                return s3_storage.save_json('manufacturers.json', manufacturers)
+            else:
+                # Use local storage
+                with open(MANUFACTURERS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(manufacturers, f, ensure_ascii=False, indent=2)
+                return True
         except Exception as e:
             self.logger.error(f"Failed to save manufacturers: {e}")
             return False
     
     def save_models(self, models: Dict[str, Dict]) -> bool:
-        """Save models to file."""
+        """Save models to S3 or local file."""
         try:
-            with open(MODELS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(models, f, ensure_ascii=False, indent=2)
-            return True
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                return s3_storage.save_json('models.json', models)
+            else:
+                # Use local storage
+                with open(MODELS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(models, f, ensure_ascii=False, indent=2)
+                return True
         except Exception as e:
             self.logger.error(f"Failed to save models: {e}")
             return False

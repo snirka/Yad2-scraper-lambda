@@ -137,6 +137,8 @@ aws lambda update-function-configuration --function-name yad2-car-scraper --envi
 - **High availability**: Built-in redundancy
 - **Monitoring**: CloudWatch logs and metrics included
 - **Name translation**: Use car names instead of numeric IDs
+- **S3 storage**: Persistent data storage without local file system
+- **Serverless design**: Fully read-only Lambda environment
 
 #### Monitoring Lambda
 ```bash

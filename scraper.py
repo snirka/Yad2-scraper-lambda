@@ -17,6 +17,14 @@ from config import (
     DATA_DIR, LISTINGS_CACHE_FILE, SearchFilter
 )
 
+# Import S3 storage for Lambda compatibility
+try:
+    from s3_storage import get_s3_storage, should_use_s3
+except ImportError:
+    # S3 storage not available (local mode)
+    get_s3_storage = None
+    should_use_s3 = lambda: False
+
 
 @dataclass
 class CarListing:
@@ -75,37 +83,29 @@ class Yad2Scraper:
         self._ensure_data_dir()
         
     def _setup_logging(self) -> logging.Logger:
-        """Set up logging configuration."""
-        os.makedirs(DATA_DIR, exist_ok=True)
-        
+        """Set up logging configuration for Lambda/CloudWatch."""
         logger = logging.getLogger('yad2_scraper')
-        logger.setLevel(logging.DEBUG)  # Enable debug logging for better troubleshooting
+        logger.setLevel(logging.INFO)  # Use INFO level for production
         
+        # Only add handler if none exists (avoid duplicate logs)
         if not logger.handlers:
-            # File handler
-            from config import LOG_FILE
-            file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
-            file_handler.setLevel(logging.DEBUG)
-            
-            # Console handler
+            # Console handler only (Lambda sends this to CloudWatch)
             console_handler = logging.StreamHandler()
-            console_handler.setLevel(logging.DEBUG)
+            console_handler.setLevel(logging.INFO)
             
-            # Formatter
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            file_handler.setFormatter(formatter)
+            # Formatter optimized for CloudWatch
+            formatter = logging.Formatter('%(levelname)s - %(name)s - %(message)s')
             console_handler.setFormatter(formatter)
             
-            logger.addHandler(file_handler)
             logger.addHandler(console_handler)
         
         return logger
     
     def _ensure_data_dir(self):
-        """Ensure data directory exists."""
-        os.makedirs(DATA_DIR, exist_ok=True)
+        """Ensure data directory exists (for local mode only)."""
+        # Skip directory creation in Lambda environment
+        if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+            os.makedirs(DATA_DIR, exist_ok=True)
     
     def _get_random_user_agent(self) -> str:
         """Get a random user agent to avoid detection."""
@@ -346,16 +346,23 @@ class Yad2Scraper:
     
     def load_cached_listings(self) -> Set[str]:
         """
-        Load previously seen listing IDs from cache.
+        Load previously seen listing IDs from cache (S3 or local).
         
         Returns:
             Set of listing IDs
         """
         try:
-            if os.path.exists(LISTINGS_CACHE_FILE):
-                with open(LISTINGS_CACHE_FILE, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    return set(data.get('listing_ids', []))
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                data = s3_storage.load_json('listings_cache.json', {})
+                return set(data.get('listing_ids', []))
+            else:
+                # Use local storage
+                if os.path.exists(LISTINGS_CACHE_FILE):
+                    with open(LISTINGS_CACHE_FILE, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        return set(data.get('listing_ids', []))
         except Exception as e:
             self.logger.error(f"Error loading cached listings: {e}")
         
@@ -363,7 +370,7 @@ class Yad2Scraper:
     
     def save_cached_listings(self, listing_ids: Set[str], all_listings: List[CarListing]):
         """
-        Save listing IDs and full listing data to cache.
+        Save listing IDs and full listing data to cache (S3 or local).
         
         Args:
             listing_ids: Set of listing IDs
@@ -376,10 +383,18 @@ class Yad2Scraper:
                 'listings': [listing.to_dict() for listing in all_listings]
             }
             
-            with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(cache_data, f, indent=2, ensure_ascii=False)
-                
-            self.logger.info(f"Cached {len(listing_ids)} listing IDs")
+            if should_use_s3() and get_s3_storage:
+                # Use S3 storage
+                s3_storage = get_s3_storage()
+                if s3_storage.save_json('listings_cache.json', cache_data):
+                    self.logger.info(f"Cached {len(listing_ids)} listing IDs to S3")
+                else:
+                    self.logger.error("Failed to save cache to S3")
+            else:
+                # Use local storage
+                with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(cache_data, f, indent=2, ensure_ascii=False)
+                self.logger.info(f"Cached {len(listing_ids)} listing IDs to local file")
             
         except Exception as e:
             self.logger.error(f"Error saving cached listings: {e}")

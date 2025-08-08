@@ -16,6 +16,7 @@ from config import SearchFilter
 from scraper import Yad2Scraper
 from telegram_bot import TelegramNotifier
 from manufacturer_mapper import ManufacturerMapper
+from s3_storage import get_s3_storage
 
 
 class LambdaCarScraper:
@@ -25,6 +26,9 @@ class LambdaCarScraper:
         """Initialize the Lambda scraper."""
         self.setup_logging()
         self.logger = logging.getLogger('lambda_car_scraper')
+        
+        # Initialize S3 storage
+        self.setup_s3_storage()
         
         # Initialize components
         self.scraper = Yad2Scraper()
@@ -49,6 +53,41 @@ class LambdaCarScraper:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
+    
+    def setup_s3_storage(self):
+        """Initialize and verify S3 storage if enabled."""
+        try:
+            # Check if we should use S3 storage
+            use_s3 = os.environ.get('USE_S3_STORAGE', '').lower() in ('true', '1', 'yes') or \
+                     os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None
+            
+            if not use_s3:
+                self.logger.info("S3 storage disabled - using local storage mode")
+                return
+            
+            bucket_name = os.environ.get('S3_BUCKET_NAME')
+            if not bucket_name:
+                self.logger.warning("S3_BUCKET_NAME not set - falling back to local storage")
+                return
+            
+            s3_storage = get_s3_storage()
+            
+            # Ensure bucket exists
+            if not s3_storage.bucket_exists():
+                self.logger.info(f"Creating S3 bucket: {s3_storage.bucket_name}")
+                if not s3_storage.create_bucket_if_not_exists():
+                    self.logger.error("Failed to create S3 bucket")
+                    raise Exception("S3 bucket setup failed")
+            
+            self.logger.info(f"S3 storage initialized successfully: {s3_storage.bucket_name}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize S3 storage: {e}")
+            # In local development, don't fail hard on S3 issues
+            if not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+                self.logger.warning("Continuing with local storage mode")
+            else:
+                raise
     
     def load_filters_from_env(self) -> List[SearchFilter]:
         """

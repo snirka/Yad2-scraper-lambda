@@ -68,6 +68,7 @@ cp config.py "$PACKAGE_DIR/"
 cp scraper.py "$PACKAGE_DIR/"
 cp telegram_bot.py "$PACKAGE_DIR/"
 cp manufacturer_mapper.py "$PACKAGE_DIR/"
+cp s3_storage.py "$PACKAGE_DIR/"
 
 # Install dependencies
 print_status "Installing dependencies..."

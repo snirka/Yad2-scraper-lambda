@@ -13,6 +13,15 @@ LAMBDA_TIMEOUT = 900  # 15 minutes (max for Lambda)
 LAMBDA_MEMORY = 512   # MB
 LAMBDA_RUNTIME = "python3.9"
 
+# S3 Storage settings
+S3_BUCKET_PREFIX = "yad2-scraper/"
+S3_FILES = {
+    'manufacturers': 'manufacturers.json',
+    'models': 'models.json',
+    'listings_cache': 'listings_cache.json',
+    'filters': 'filters.json'
+}
+
 # Base URLs (same as main config)
 YAD2_BASE_URL = "https://www.yad2.co.il"
 YAD2_CARS_URL = "https://www.yad2.co.il/vehicles/cars"
