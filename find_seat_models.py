@@ -1,0 +1,31 @@
+"""Script to help find Seat model IDs from Yad2."""
+
+print("🔍 Finding Seat Models")
+print("=" * 40)
+print()
+print("To get Seat model IDs, you need to:")
+print()
+print("1. Go back to F12 developer tools")
+print("2. Select 'Seat' (ID 37) in manufacturer dropdown")
+print("3. Look for an API call that loads the models")
+print("4. The API call will be something like:")
+print("   GET /api/v1/vehicle/models?manufacturer=37")
+print("   or similar endpoint")
+print()
+print("5. Copy the JSON response and look for Ibiza")
+print()
+print("Based on your original URL example:")
+print("  manufacturer=37 (Seat) ✅")
+print("  model=10507 (likely Ibiza) ⚠️ needs verification")
+print()
+print("To verify, try this URL:")
+print("https://www.yad2.co.il/vehicles/cars?manufacturer=37&model=10507")
+print()
+print("If it shows Seat Ibiza cars, then 10507 is correct!")
+print()
+print("Alternative: Use the interactive filter creator:")
+print("  python3 main.py add-filter")
+print("  It will help you search and verify IDs")
+
+if __name__ == "__main__":
+    pass

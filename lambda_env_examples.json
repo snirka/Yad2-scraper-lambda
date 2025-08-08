@@ -1,0 +1,87 @@
+{
+  "environment_variable_examples": {
+    "telegram_config": {
+      "TELEGRAM_BOT_TOKEN": "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "TELEGRAM_CHAT_ID": "123456789"
+    },
+    
+    "single_filter_method": {
+      "FILTER_NAME": "my-audi-filter",
+      "MANUFACTURER": "אאודי",
+      "MODEL": "A3",
+      "YEAR": "2020-2023",
+      "KM": "1-50000",
+      "PRICE": "100000-300000"
+    },
+    
+    "multiple_filters_json_method": {
+      "FILTER_1": "{\"name\":\"audi-a3\",\"manufacturer\":\"אאודי\",\"model\":\"A3\",\"year\":\"2020-2023\",\"km\":\"1-50000\"}",
+      "FILTER_2": "{\"name\":\"seat-ibiza\",\"manufacturer\":\"סיאט\",\"model\":\"איביזה\",\"year\":\"2015-2020\",\"km\":\"1-80000\"}",
+      "FILTER_3": "{\"name\":\"toyota-any\",\"manufacturer\":\"19\",\"year\":\"2018-2023\"}"
+    },
+    
+    "multiple_filters_individual_vars_method": {
+      "FILTER_1_NAME": "luxury-audi",
+      "FILTER_1_MANUFACTURER": "Audi",
+      "FILTER_1_MODEL": "A4",
+      "FILTER_1_YEAR": "2021-2023",
+      "FILTER_1_KM": "1-30000",
+      "FILTER_1_PRICE": "200000-400000",
+      
+      "FILTER_2_NAME": "budget-seat",
+      "FILTER_2_MANUFACTURER": "37",
+      "FILTER_2_MODEL": "10507",
+      "FILTER_2_YEAR": "2015-2019",
+      "FILTER_2_KM": "1-100000",
+      "FILTER_2_PRICE": "50000-120000"
+    }
+  },
+  
+  "aws_cli_examples": {
+    "set_telegram_config": "aws lambda update-function-configuration --function-name yad2-car-scraper --environment Variables='{\"TELEGRAM_BOT_TOKEN\":\"YOUR_TOKEN\",\"TELEGRAM_CHAT_ID\":\"YOUR_CHAT_ID\"}'",
+    
+    "set_single_filter": "aws lambda update-function-configuration --function-name yad2-car-scraper --environment Variables='{\"TELEGRAM_BOT_TOKEN\":\"YOUR_TOKEN\",\"TELEGRAM_CHAT_ID\":\"YOUR_CHAT_ID\",\"MANUFACTURER\":\"אאודי\",\"MODEL\":\"A3\",\"YEAR\":\"2020-2023\"}'",
+    
+    "set_multiple_filters": "aws lambda update-function-configuration --function-name yad2-car-scraper --environment Variables='{\"TELEGRAM_BOT_TOKEN\":\"YOUR_TOKEN\",\"TELEGRAM_CHAT_ID\":\"YOUR_CHAT_ID\",\"FILTER_1\":\"{\\\"name\\\":\\\"audi-a3\\\",\\\"manufacturer\\\":\\\"1\\\",\\\"model\\\":\\\"10004\\\",\\\"year\\\":\\\"2020-2023\\\"}\",\"FILTER_2\":\"{\\\"name\\\":\\\"seat-ibiza\\\",\\\"manufacturer\\\":\\\"37\\\",\\\"model\\\":\\\"10507\\\",\\\"year\\\":\\\"2015-2020\\\"}\"}'"
+  },
+  
+  "terraform_examples": {
+    "lambda_environment": {
+      "environment": {
+        "variables": {
+          "TELEGRAM_BOT_TOKEN": "var.telegram_bot_token",
+          "TELEGRAM_CHAT_ID": "var.telegram_chat_id",
+          "FILTER_1": "{\"name\":\"audi-a3\",\"manufacturer\":\"1\",\"model\":\"10004\",\"year\":\"2020-2023\"}",
+          "FILTER_2": "{\"name\":\"seat-ibiza\",\"manufacturer\":\"37\",\"model\":\"10507\",\"year\":\"2015-2020\"}"
+        }
+      }
+    }
+  },
+  
+  "manufacturer_ids_reference": {
+    "1": "אאודי (Audi)",
+    "13": "טויוטה (Toyota)",
+    "19": "יונדאי (Hyundai)", 
+    "32": "ניסן (Nissan)",
+    "37": "סיאט (Seat)",
+    "46": "פולקסווגן (Volkswagen)",
+    "47": "וולוו (Volvo)",
+    "48": "BMW",
+    "49": "מרצדס (Mercedes)"
+  },
+  
+  "common_model_ids": {
+    "audi": {
+      "10003": "A1",
+      "10004": "A3", 
+      "10005": "A4",
+      "10006": "A5",
+      "10007": "A6"
+    },
+    "seat": {
+      "10507": "איביזה (Ibiza)",
+      "10509": "לאון (Leon)",
+      "10502": "אלהמברה (Alhambra)"
+    }
+  }
+}
