@@ -399,12 +399,21 @@ class Yad2Scraper:
                         self.logger.info(f"Cached {len(listing_ids)} listing IDs to S3")
                     else:
                         self.logger.error("Failed to save cache to S3")
+                        # In Lambda environment, we must not fall back to local storage
+                        # as it will be lost when the execution ends
+                        if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+                            raise Exception("S3 cache save failed in Lambda - cannot fall back to ephemeral local storage")
                 except Exception as s3_error:
-                    self.logger.warning(f"S3 cache save failed, falling back to local: {s3_error}")
-                    # Fall back to local storage
-                    with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
-                        json.dump(cache_data, f, indent=2, ensure_ascii=False)
-                    self.logger.info(f"Cached {len(listing_ids)} listing IDs to local file")
+                    # In Lambda environment, fail hard if S3 doesn't work
+                    if os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+                        self.logger.error(f"CRITICAL: S3 cache save failed in Lambda environment: {s3_error}")
+                        raise Exception(f"Lambda execution cannot continue without S3 cache: {s3_error}")
+                    else:
+                        # In local development, fall back to local storage
+                        self.logger.warning(f"S3 cache save failed, falling back to local: {s3_error}")
+                        with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
+                            json.dump(cache_data, f, indent=2, ensure_ascii=False)
+                        self.logger.info(f"Cached {len(listing_ids)} listing IDs to local file")
             else:
                 # Use local storage
                 with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
