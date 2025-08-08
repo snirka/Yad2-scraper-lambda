@@ -34,9 +34,16 @@ class ManufacturerMapper:
         """Load manufacturers from S3 or local file."""
         try:
             if should_use_s3() and get_s3_storage:
-                # Use S3 storage
-                s3_storage = get_s3_storage()
-                return s3_storage.load_json('manufacturers.json', {})
+                try:
+                    # Try S3 storage first
+                    s3_storage = get_s3_storage()
+                    return s3_storage.load_json('manufacturers.json', {})
+                except Exception as s3_error:
+                    self.logger.warning(f"S3 storage failed, falling back to local: {s3_error}")
+                    # Fall back to local storage
+                    if os.path.exists(MANUFACTURERS_FILE):
+                        with open(MANUFACTURERS_FILE, 'r', encoding='utf-8') as f:
+                            return json.load(f)
             else:
                 # Use local storage
                 if os.path.exists(MANUFACTURERS_FILE):
@@ -50,9 +57,16 @@ class ManufacturerMapper:
         """Load models from S3 or local file."""
         try:
             if should_use_s3() and get_s3_storage:
-                # Use S3 storage
-                s3_storage = get_s3_storage()
-                return s3_storage.load_json('models.json', {})
+                try:
+                    # Try S3 storage first
+                    s3_storage = get_s3_storage()
+                    return s3_storage.load_json('models.json', {})
+                except Exception as s3_error:
+                    self.logger.warning(f"S3 storage failed, falling back to local: {s3_error}")
+                    # Fall back to local storage
+                    if os.path.exists(MODELS_FILE):
+                        with open(MODELS_FILE, 'r', encoding='utf-8') as f:
+                            return json.load(f)
             else:
                 # Use local storage
                 if os.path.exists(MODELS_FILE):

@@ -353,10 +353,18 @@ class Yad2Scraper:
         """
         try:
             if should_use_s3() and get_s3_storage:
-                # Use S3 storage
-                s3_storage = get_s3_storage()
-                data = s3_storage.load_json('listings_cache.json', {})
-                return set(data.get('listing_ids', []))
+                try:
+                    # Try S3 storage first
+                    s3_storage = get_s3_storage()
+                    data = s3_storage.load_json('listings_cache.json', {})
+                    return set(data.get('listing_ids', []))
+                except Exception as s3_error:
+                    self.logger.warning(f"S3 cache failed, falling back to local: {s3_error}")
+                    # Fall back to local storage
+                    if os.path.exists(LISTINGS_CACHE_FILE):
+                        with open(LISTINGS_CACHE_FILE, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                            return set(data.get('listing_ids', []))
             else:
                 # Use local storage
                 if os.path.exists(LISTINGS_CACHE_FILE):
@@ -384,12 +392,19 @@ class Yad2Scraper:
             }
             
             if should_use_s3() and get_s3_storage:
-                # Use S3 storage
-                s3_storage = get_s3_storage()
-                if s3_storage.save_json('listings_cache.json', cache_data):
-                    self.logger.info(f"Cached {len(listing_ids)} listing IDs to S3")
-                else:
-                    self.logger.error("Failed to save cache to S3")
+                try:
+                    # Try S3 storage first
+                    s3_storage = get_s3_storage()
+                    if s3_storage.save_json('listings_cache.json', cache_data):
+                        self.logger.info(f"Cached {len(listing_ids)} listing IDs to S3")
+                    else:
+                        self.logger.error("Failed to save cache to S3")
+                except Exception as s3_error:
+                    self.logger.warning(f"S3 cache save failed, falling back to local: {s3_error}")
+                    # Fall back to local storage
+                    with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
+                        json.dump(cache_data, f, indent=2, ensure_ascii=False)
+                    self.logger.info(f"Cached {len(listing_ids)} listing IDs to local file")
             else:
                 # Use local storage
                 with open(LISTINGS_CACHE_FILE, 'w', encoding='utf-8') as f:
